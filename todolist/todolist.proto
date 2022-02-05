@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package grpc;
+option go_package ="github.com/gen1us2k/cloudnative_todo_list/grpc";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+message User {
+	string id = 1;
+	string first_name = 2;
+	string last_name = 3;
+	string email = 4;
+}
+
+message Todo {
+	int64 id = 1;
+	string title = 2;
+	string status = 3;
+	User owner = 4;
+}
+
+message Response {
+	string status = 1;
+	string lo = 2;
+}
+
+service TodolistAPI {
+	rpc CreateTodo(Todo) returns (Response) {
+		option (google.api.http) = {
+			post: "/api/todo"
+			body: "*"
+		};
+	}
+	rpc ListTodos(google.protobuf.Empty) returns ( Todo) {
+		option (google.api.http) = {
+			get: "/api/todo"
+		};
+	}
+	rpc UpdateTodo(Todo) returns (Todo) {
+		option (google.api.http) = {
+			post: "/api/todo/{id}"
+			body: "*"
+		};
+	}
+	rpc DeleteTodo(Todo) returns (Response) {
+		option (google.api.http) = {
+			delete: "/api/todo/{id}"
+			body: "*"
+		};
+	}
+}
+
