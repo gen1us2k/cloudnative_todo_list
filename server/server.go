@@ -10,7 +10,7 @@ import (
 	"github.com/gen1us2k/cloudnative_todo_list/database"
 	"github.com/gen1us2k/cloudnative_todo_list/database/supabase"
 	"github.com/gen1us2k/cloudnative_todo_list/grpc/v1/todolist"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -52,12 +52,20 @@ func (s *Server) startHTTP() error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	mux := runtime.NewServeMux()
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	err := todolist.RegisterTodolistAPIServiceHandlerServer(ctx, mux, fmt.Sprintf("localhost:%d", s.config.Port), opts)
+	conn, err := grpc.DialContext(
+		context.Background(),
+		fmt.Sprintf("localhost:%d", s.config.GRPCPort),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 	if err != nil {
 		return err
 	}
-	return http.ListenAndServe(s.config.HTTPPort, mux)
+	err = todolist.RegisterTodolistAPIServiceHandler(ctx, mux, conn)
+	if err != nil {
+		return err
+	}
+	return http.ListenAndServe(fmt.Sprintf(":%d", s.config.HTTPPort), mux)
 }
 func (s *Server) startGRPC() error {
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", s.config.GRPCPort))

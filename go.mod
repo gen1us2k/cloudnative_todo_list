@@ -9,7 +9,11 @@ require (
 )
 
 require (
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/stretchr/testify v1.7.0
+	github.com/supabase/postgrest-go v0.0.6
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	google.golang.org/genproto v0.0.0-20220118154757-00ab72f36ad5
 	google.golang.org/grpc v1.43.0
 )
@@ -20,8 +24,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/testify v1.7.0 // indirect
-	github.com/supabase/postgrest-go v0.0.6 // indirect
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
 	golang.org/x/sys v0.0.0-20210510120138-977fb7262007 // indirect
 	golang.org/x/text v0.3.5 // indirect
