@@ -1,7 +1,8 @@
 syntax = "proto3";
 
-package grpc;
-option go_package ="github.com/gen1us2k/cloudnative_todo_list/grpc";
+package grpc.v1;
+
+option go_package ="github.com/gen1us2k/cloudnative_todo_list/grpc/v1/todolist";
 
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
@@ -24,15 +25,18 @@ message Response {
 	string status = 1;
 	string lo = 2;
 }
+message TodoListResponse {
+	repeated Todo todos = 1;
+}
 
-service TodolistAPI {
+service TodolistAPIService {
 	rpc CreateTodo(Todo) returns (Response) {
 		option (google.api.http) = {
 			post: "/api/todo"
 			body: "*"
 		};
 	}
-	rpc ListTodos(google.protobuf.Empty) returns ( Todo) {
+	rpc ListTodos(google.protobuf.Empty) returns (TodoListResponse) {
 		option (google.api.http) = {
 			get: "/api/todo"
 		};

@@ -2,6 +2,7 @@ version: v1
 name: buf.build/gen1us2k/cloudnative_todo_list
 deps:
   - buf.build/googleapis/googleapis
+  - buf.build/grpc-ecosystem/grpc-gateway
 breaking:
   use:
     - FILE

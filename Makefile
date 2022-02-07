@@ -10,7 +10,4 @@ deps: ## install binaries
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
 
 build_grpc:
-	protoc -I . \
-	    --go_out ./grpc --go_opt paths=source_relative \
-	    --go-grpc_out ./grpc --go-grpc_opt paths=source_relative \
-	    grpc/todolist.proto
+	buf generate
