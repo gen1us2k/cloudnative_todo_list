@@ -9,5 +9,8 @@ deps: ## install binaries
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.26
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
 
-build_grpc:
+build_grpc: ## Generate files for gRPC
 	buf generate
+
+test:
+	go test ./...
