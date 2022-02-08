@@ -43,7 +43,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1Response"
+              "$ref": "#/definitions/v1Todo"
             }
           },
           "default": {
@@ -75,7 +75,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1Response"
+              "$ref": "#/definitions/v1DeleteResponse"
             }
           },
           "default": {
@@ -195,7 +195,7 @@
         }
       }
     },
-    "v1Response": {
+    "v1DeleteResponse": {
       "type": "object",
       "properties": {
         "status": {

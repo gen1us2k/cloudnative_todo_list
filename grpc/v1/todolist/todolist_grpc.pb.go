@@ -23,10 +23,10 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TodolistAPIServiceClient interface {
-	CreateTodo(ctx context.Context, in *Todo, opts ...grpc.CallOption) (*Response, error)
+	CreateTodo(ctx context.Context, in *Todo, opts ...grpc.CallOption) (*Todo, error)
 	ListTodos(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TodoListResponse, error)
 	UpdateTodo(ctx context.Context, in *Todo, opts ...grpc.CallOption) (*Todo, error)
-	DeleteTodo(ctx context.Context, in *Todo, opts ...grpc.CallOption) (*Response, error)
+	DeleteTodo(ctx context.Context, in *Todo, opts ...grpc.CallOption) (*DeleteResponse, error)
 }
 
 type todolistAPIServiceClient struct {
@@ -37,8 +37,8 @@ func NewTodolistAPIServiceClient(cc grpc.ClientConnInterface) TodolistAPIService
 	return &todolistAPIServiceClient{cc}
 }
 
-func (c *todolistAPIServiceClient) CreateTodo(ctx context.Context, in *Todo, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
+func (c *todolistAPIServiceClient) CreateTodo(ctx context.Context, in *Todo, opts ...grpc.CallOption) (*Todo, error) {
+	out := new(Todo)
 	err := c.cc.Invoke(ctx, "/grpc.v1.TodolistAPIService/CreateTodo", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -64,8 +64,8 @@ func (c *todolistAPIServiceClient) UpdateTodo(ctx context.Context, in *Todo, opt
 	return out, nil
 }
 
-func (c *todolistAPIServiceClient) DeleteTodo(ctx context.Context, in *Todo, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
+func (c *todolistAPIServiceClient) DeleteTodo(ctx context.Context, in *Todo, opts ...grpc.CallOption) (*DeleteResponse, error) {
+	out := new(DeleteResponse)
 	err := c.cc.Invoke(ctx, "/grpc.v1.TodolistAPIService/DeleteTodo", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -77,17 +77,17 @@ func (c *todolistAPIServiceClient) DeleteTodo(ctx context.Context, in *Todo, opt
 // All implementations should embed UnimplementedTodolistAPIServiceServer
 // for forward compatibility
 type TodolistAPIServiceServer interface {
-	CreateTodo(context.Context, *Todo) (*Response, error)
+	CreateTodo(context.Context, *Todo) (*Todo, error)
 	ListTodos(context.Context, *emptypb.Empty) (*TodoListResponse, error)
 	UpdateTodo(context.Context, *Todo) (*Todo, error)
-	DeleteTodo(context.Context, *Todo) (*Response, error)
+	DeleteTodo(context.Context, *Todo) (*DeleteResponse, error)
 }
 
 // UnimplementedTodolistAPIServiceServer should be embedded to have forward compatible implementations.
 type UnimplementedTodolistAPIServiceServer struct {
 }
 
-func (UnimplementedTodolistAPIServiceServer) CreateTodo(context.Context, *Todo) (*Response, error) {
+func (UnimplementedTodolistAPIServiceServer) CreateTodo(context.Context, *Todo) (*Todo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTodo not implemented")
 }
 func (UnimplementedTodolistAPIServiceServer) ListTodos(context.Context, *emptypb.Empty) (*TodoListResponse, error) {
@@ -96,7 +96,7 @@ func (UnimplementedTodolistAPIServiceServer) ListTodos(context.Context, *emptypb
 func (UnimplementedTodolistAPIServiceServer) UpdateTodo(context.Context, *Todo) (*Todo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateTodo not implemented")
 }
-func (UnimplementedTodolistAPIServiceServer) DeleteTodo(context.Context, *Todo) (*Response, error) {
+func (UnimplementedTodolistAPIServiceServer) DeleteTodo(context.Context, *Todo) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteTodo not implemented")
 }
 

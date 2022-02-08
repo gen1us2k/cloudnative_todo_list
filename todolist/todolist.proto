@@ -21,7 +21,7 @@ message Todo {
 	User owner = 4;
 }
 
-message Response {
+message DeleteResponse {
 	string status = 1;
 	string lo = 2;
 }
@@ -30,7 +30,7 @@ message TodoListResponse {
 }
 
 service TodolistAPIService {
-	rpc CreateTodo(Todo) returns (Response) {
+	rpc CreateTodo(Todo) returns (Todo) {
 		option (google.api.http) = {
 			post: "/api/todo"
 			body: "*"
@@ -47,7 +47,7 @@ service TodolistAPIService {
 			body: "*"
 		};
 	}
-	rpc DeleteTodo(Todo) returns (Response) {
+	rpc DeleteTodo(Todo) returns (DeleteResponse) {
 		option (google.api.http) = {
 			delete: "/api/todo/{id}"
 			body: "*"

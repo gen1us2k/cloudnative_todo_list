@@ -39,7 +39,7 @@ func (s *Supabase) CreateTodo(todo models.Todo) (models.Todo, error) {
 }
 func (s *Supabase) ListTodos() ([]models.Todo, error) {
 	var todos []models.Todo
-	q := s.conn.From("Todos").Select("", "", true)
+	q := s.conn.From("Todos").Select("*", "10", false)
 	_, err := q.ExecuteTo(&todos)
 	return todos, err
 
