@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
 
 	"github.com/gen1us2k/cloudnative_todo_list/config"
@@ -19,6 +21,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -47,6 +50,12 @@ func (s *Server) CreateTodo(ctx context.Context, todo *todolist.Todo) (*todolist
 }
 
 func (s *Server) ListTodos(ctx context.Context, e *emptypb.Empty) (*todolist.TodoListResponse, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, errors.New("")
+	}
+	userID := md.Get("user_id")
+	spew.Dump(userID)
 	todos, err := s.db.ListTodos()
 	if err != nil {
 		return nil, err

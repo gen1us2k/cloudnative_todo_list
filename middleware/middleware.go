@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/gen1us2k/cloudnative_todo_list/grpc/v1/todolist"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
@@ -17,6 +18,7 @@ import (
 
 const (
 	KratosSessionKey = "ory_kratos_session"
+	TraitsKey        = "kratos_traits"
 )
 
 type (
@@ -33,9 +35,13 @@ type (
 	Trait struct {
 		Name struct {
 			First string `json:"first"`
-			Last  string `json:"Last"`
+			Last  string `json:"last"`
 		} `json:"name"`
 		Email string `json:"email"`
+	}
+	Identity struct {
+		ID     string `json:"id"`
+		Traits Trait  `json:"traits"`
 	}
 	KratosSession struct {
 		Active                      bool                         `json:"active"`
@@ -43,11 +49,19 @@ type (
 		AuthenticationMethods       []KratosAuthenticationMethod `json:"authentication_methods"`
 		AuthenticatorAssuranceLevel string                       `json:"authenticator_assurance_level"`
 		ExpiresAt                   string                       `json:"expires_at"`
-		Traits                      Trait                        `json:"traits"`
+		Identity                    Identity                     `json:"identity"`
 		ID                          string                       `json:"id"`
 	}
 )
 
+func (s *KratosSession) ToProtobuf() *todolist.User {
+	return &todolist.User{
+		Id:        s.ID,
+		FirstName: s.Identity.Traits.Name.First,
+		LastName:  s.Identity.Traits.Name.Last,
+		Email:     s.Identity.Traits.Email,
+	}
+}
 func UnaryServerInterceptor(authFunc AuthFunc) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		var newCtx context.Context
@@ -66,9 +80,19 @@ func GatewayResponseModifier(ctx context.Context, response http.ResponseWriter, 
 }
 
 // look up session and pass userId in to context if it exists
-func GatewayMetadataAnnotator(_ context.Context, r *http.Request) metadata.MD {
+func GatewayMetadataAnnotator(ctx context.Context, r *http.Request) metadata.MD {
 	// otherwise pass no extra metadata along
 	spew.Dump("GatewayMetadataAnnotator")
+	user, ok := ctx.Value(TraitsKey).(*todolist.User)
+	if !ok {
+		return metadata.Pairs()
+	}
+	if user != nil {
+		md := metadata.Pairs("user_id", user.Id)
+		md.Append("first_name", user.FirstName)
+		md.Append("last_name", user.LastName)
+		return md
+	}
 	return metadata.Pairs()
 }
 
@@ -83,8 +107,7 @@ func (k *KratosMiddleware) Middleware(next http.Handler) http.Handler {
 			http.Redirect(w, r, k.UIURL, http.StatusFound)
 			return
 		}
-		spew.Dump(session)
-		ctx = context.WithValue(ctx, 0, r)
+		ctx = context.WithValue(ctx, TraitsKey, session.ToProtobuf())
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -100,10 +123,13 @@ func (k *KratosMiddleware) validateSession(ctx context.Context, r *http.Request)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(KratosSessionKey, cookie.Value)
+	req.AddCookie(cookie)
 	resp, err := k.Client.Do(req)
 	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("wrong status code")
 	}
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
