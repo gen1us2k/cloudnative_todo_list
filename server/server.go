@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"time"
+
+	"github.com/gorilla/mux"
 
 	"github.com/gen1us2k/cloudnative_todo_list/config"
 	"github.com/gen1us2k/cloudnative_todo_list/database"
 	"github.com/gen1us2k/cloudnative_todo_list/database/supabase"
 	"github.com/gen1us2k/cloudnative_todo_list/grpc/v1/todolist"
+	"github.com/gen1us2k/cloudnative_todo_list/middleware"
 	"github.com/gen1us2k/cloudnative_todo_list/models"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"golang.org/x/sync/errgroup"
@@ -74,7 +78,19 @@ func (s *Server) startHTTP() error {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	mux := runtime.NewServeMux()
+	gwmux := runtime.NewServeMux(
+		runtime.WithForwardResponseOption(middleware.GatewayResponseModifier),
+		runtime.WithMetadata(middleware.GatewayMetadataAnnotator),
+	)
+	kratos := middleware.KratosMiddleware{
+		APIURL: s.config.KratosAPIURL,
+		UIURL:  s.config.KratosUIURL,
+		Client: &http.Client{},
+	}
+
+	r := mux.NewRouter()
+	r.Use(kratos.Middleware)
+	r.PathPrefix("/").Handler(gwmux)
 	conn, err := grpc.DialContext(
 		context.Background(),
 		fmt.Sprintf("localhost:%d", s.config.GRPCPort),
@@ -84,11 +100,18 @@ func (s *Server) startHTTP() error {
 	if err != nil {
 		return err
 	}
-	err = todolist.RegisterTodolistAPIServiceHandler(ctx, mux, conn)
+	err = todolist.RegisterTodolistAPIServiceHandler(ctx, gwmux, conn)
 	if err != nil {
 		return err
 	}
-	return http.ListenAndServe(fmt.Sprintf(":%d", s.config.HTTPPort), mux)
+	srv := &http.Server{
+		Addr:         fmt.Sprintf(":%d", s.config.HTTPPort),
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+		Handler:      r, // Pass our instance of gorilla/mux in.
+	}
+	return srv.ListenAndServe()
 }
 func (s *Server) startGRPC() error {
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", s.config.GRPCPort))
