@@ -10,50 +10,68 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/gen1us2k/cloudnative_todo_list/config"
 	"github.com/gen1us2k/cloudnative_todo_list/grpc/v1/todolist"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 )
 
-const (
-	KratosSessionKey = "ory_kratos_session"
-	TraitsKey        = "kratos_traits"
-)
-
 type (
-	AuthFunc         func(ctx context.Context) (context.Context, error)
+	// AuthFunc is the pluggable function that performs authentication.
+	//
+	// The passed in `Context` will contain the gRPC metadata.MD object (for header-based authentication) and
+	// the peer.Peer information that can contain transport-based credentials (e.g. `credentials.AuthInfo`).
+	//
+	// The returned context will be propagated to handlers, allowing user changes to `Context`. However,
+	// please make sure that the `Context` returned is a child `Context` of the one passed in.
+	//
+	// If error is returned, its `grpc.Code()` will be returned to the user as well as the verbatim message.
+	// Please make sure you use `codes.Unauthenticated` (lacking auth) and `codes.PermissionDenied`
+	// (authed, but lacking perms) appropriately.
+	AuthFunc func(ctx context.Context) (context.Context, error)
+	// KratosMiddleware is a simple authentication middleware
+	// for Ory Kratos used by gRPC-gateway
+	//
+	// The idea of middleware is simple
+	//
+	// 1. Get ory_kratos_session cookie
+	// 2. Check this cookie
+	// 3. Get identity and verify it
+	// 4. If anything goes wrong redirect to Ory Kratos UI
 	KratosMiddleware struct {
 		APIURL string
 		UIURL  string
 		Client *http.Client
 	}
-	KratosAuthenticationMethod struct {
-		CompletedAt time.Time `json:"completed_at"`
-		Method      string    `json:"method"`
-	}
-	Trait struct {
-		Name struct {
-			First string `json:"first"`
-			Last  string `json:"last"`
-		} `json:"name"`
-		Email string `json:"email"`
-	}
+	// Identity represents identity sent from Kratos
 	Identity struct {
 		ID     string `json:"id"`
-		Traits Trait  `json:"traits"`
+		Traits struct {
+			Name struct {
+				First string `json:"first"`
+				Last  string `json:"last"`
+			} `json:"name"`
+			Email string `json:"email"`
+		} `json:"traits"`
 	}
+	// KratosSession represents Kratos session returned
+	// from /session/whoami from Ory Kratos
 	KratosSession struct {
-		Active                      bool                         `json:"active"`
-		AuthenticatedAt             time.Time                    `json:"authenticated_at"`
-		AuthenticationMethods       []KratosAuthenticationMethod `json:"authentication_methods"`
-		AuthenticatorAssuranceLevel string                       `json:"authenticator_assurance_level"`
-		ExpiresAt                   string                       `json:"expires_at"`
-		Identity                    Identity                     `json:"identity"`
-		ID                          string                       `json:"id"`
+		Active                bool      `json:"active"`
+		AuthenticatedAt       time.Time `json:"authenticated_at"`
+		AuthenticationMethods []struct {
+			CompletedAt time.Time `json:"completed_at"`
+			Method      string    `json:"method"`
+		} `json:"authentication_methods"`
+		AuthenticatorAssuranceLevel string   `json:"authenticator_assurance_level"`
+		ExpiresAt                   string   `json:"expires_at"`
+		Identity                    Identity `json:"identity"`
+		ID                          string   `json:"id"`
 	}
 )
 
+// ToProtobuf converts Kratos identity to user
 func (s *KratosSession) ToProtobuf() *todolist.User {
 	return &todolist.User{
 		Id:        s.ID,
@@ -62,6 +80,8 @@ func (s *KratosSession) ToProtobuf() *todolist.User {
 		Email:     s.Identity.Traits.Email,
 	}
 }
+
+// UnaryServerInterceptor returns a new unary server interceptors that performs per-request auth.
 func UnaryServerInterceptor(authFunc AuthFunc) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		var newCtx context.Context
@@ -74,16 +94,17 @@ func UnaryServerInterceptor(authFunc AuthFunc) grpc.UnaryServerInterceptor {
 	}
 }
 
+// GatewayResponseModifier modifies response
 func GatewayResponseModifier(ctx context.Context, response http.ResponseWriter, _ proto.Message) error {
 	spew.Dump("GatewayResponseMidifier")
 	return nil
 }
 
-// look up session and pass userId in to context if it exists
+// GatewayMetadataAnnotator looks up session and pass userId in to context if it exists
 func GatewayMetadataAnnotator(ctx context.Context, r *http.Request) metadata.MD {
 	// otherwise pass no extra metadata along
 	spew.Dump("GatewayMetadataAnnotator")
-	user, ok := ctx.Value(TraitsKey).(*todolist.User)
+	user, ok := ctx.Value(config.KratosTraitsKey).(*todolist.User)
 	if !ok {
 		return metadata.Pairs()
 	}
@@ -96,6 +117,7 @@ func GatewayMetadataAnnotator(ctx context.Context, r *http.Request) metadata.MD 
 	return metadata.Pairs()
 }
 
+// Middleware implements middleware
 func (k *KratosMiddleware) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -107,7 +129,7 @@ func (k *KratosMiddleware) Middleware(next http.Handler) http.Handler {
 			http.Redirect(w, r, k.UIURL, http.StatusFound)
 			return
 		}
-		ctx = context.WithValue(ctx, TraitsKey, session.ToProtobuf())
+		ctx = context.WithValue(ctx, config.KratosTraitsKey, session.ToProtobuf())
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -115,7 +137,7 @@ func (k *KratosMiddleware) Middleware(next http.Handler) http.Handler {
 
 func (k *KratosMiddleware) validateSession(ctx context.Context, r *http.Request) (*KratosSession, error) {
 	var session KratosSession
-	cookie, err := r.Cookie(KratosSessionKey)
+	cookie, err := r.Cookie(config.KratosSessionKey)
 	if cookie == nil {
 		return nil, errors.New("no session in cookies")
 	}

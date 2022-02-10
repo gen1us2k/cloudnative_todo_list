@@ -2,6 +2,18 @@ package config
 
 import "github.com/kelseyhightower/envconfig"
 
+const (
+	// KratosSessionKey contant stores cookie identifier for Ory Kratos
+	KratosSessionKey = "ory_kratos_session"
+	// KratosTraitsKey used to pass traits from gRPC gateway to gRPC server
+	KratosTraitsKey = "kratos_traits"
+	// EnvProduction indicates production environment
+	EnvProduction = "production"
+	// EnvDevelopment indicates development environment
+	EnvDevelopment = "development"
+)
+
+// AppConfig is a configuration struct for the whole application
 type AppConfig struct {
 	Env          string `envconfig:"ENV" default:"development"`
 	GRPCPort     int    `envconfig:"GRPC_PORT" default:"8080"`
@@ -12,6 +24,7 @@ type AppConfig struct {
 	KratosUIURL  string `envconfig:"KRATOS_UI_URL" default:"http://127.0.0.1:4455"`
 }
 
+// Parse parses configuration set by environment variables
 func Parse() (*AppConfig, error) {
 	var c AppConfig
 	err := envconfig.Process("", &c)

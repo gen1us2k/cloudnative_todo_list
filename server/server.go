@@ -25,12 +25,14 @@ import (
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
+// Server implements gRPC and http APIs
 type Server struct {
 	db       database.Database
 	config   *config.AppConfig
 	errGroup *errgroup.Group
 }
 
+// NewServer configures server
 func NewServer(c *config.AppConfig) (*Server, error) {
 	db, err := supabase.NewSupabaseDatabase(c)
 	if err != nil {
@@ -39,6 +41,7 @@ func NewServer(c *config.AppConfig) (*Server, error) {
 	return &Server{db: db, config: c, errGroup: new(errgroup.Group)}, nil
 }
 
+// CreateTodo API
 func (s *Server) CreateTodo(ctx context.Context, todo *todolist.Todo) (*todolist.Todo, error) {
 	t := models.NewTodoFromPB(todo)
 	t, err := s.db.CreateTodo(t)
@@ -49,6 +52,7 @@ func (s *Server) CreateTodo(ctx context.Context, todo *todolist.Todo) (*todolist
 
 }
 
+// ListTodos returns todos created by authenticated user
 func (s *Server) ListTodos(ctx context.Context, e *emptypb.Empty) (*todolist.TodoListResponse, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -67,6 +71,7 @@ func (s *Server) ListTodos(ctx context.Context, e *emptypb.Empty) (*todolist.Tod
 	return res, nil
 }
 
+// UpdateTodo updatesTodo
 func (s *Server) UpdateTodo(ctx context.Context, todo *todolist.Todo) (*todolist.Todo, error) {
 	t := models.NewTodoFromPB(todo)
 	t, err := s.db.UpdateTodo(t)
@@ -76,6 +81,7 @@ func (s *Server) UpdateTodo(ctx context.Context, todo *todolist.Todo) (*todolist
 	return t.ToProto(), nil
 }
 
+//DeleteTodo deletes todo
 func (s *Server) DeleteTodo(ctx context.Context, todo *todolist.Todo) (*todolist.DeleteResponse, error) {
 	if err := s.db.DeleteTodo(models.NewTodoFromPB(todo)); err != nil {
 		return nil, err
@@ -132,10 +138,14 @@ func (s *Server) startGRPC() error {
 	todolist.RegisterTodolistAPIServiceServer(grpcServer, s)
 	return grpcServer.Serve(lis)
 }
+
+// Start starts both REST and gRPC services
 func (s *Server) Start() {
 	s.errGroup.Go(s.startGRPC)
 	s.errGroup.Go(s.startHTTP)
 }
+
+// Wait for it. Just wait
 func (s *Server) Wait() error {
 	return s.errGroup.Wait()
 }
