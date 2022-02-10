@@ -12,7 +12,7 @@ deps: ## install binaries
 build_grpc: ## Generate files for gRPC
 	buf generate
 
-test:
+test: ## Run tests
 	go test ./...
 
 lint: ## Run lint against Go code
