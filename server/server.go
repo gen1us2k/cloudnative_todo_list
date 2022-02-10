@@ -90,6 +90,11 @@ func (s *Server) UpdateTodo(ctx context.Context, todo *todolist.Todo) (*todolist
 
 //DeleteTodo deletes todo
 func (s *Server) DeleteTodo(ctx context.Context, todo *todolist.Todo) (*todolist.DeleteResponse, error) {
+	userID, err := s.getUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	todo.Owner = &todolist.User{Id: userID}
 	if err := s.db.DeleteTodo(models.NewTodoFromPB(todo)); err != nil {
 		return nil, err
 	}

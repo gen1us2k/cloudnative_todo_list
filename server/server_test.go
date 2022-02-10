@@ -20,7 +20,7 @@ func TestSmokeTest(t *testing.T) {
 		Status: "active",
 	}
 	reqCtx := metadata.NewIncomingContext(context.TODO(), md)
-	_ = reqCtx
+
 	c, err := config.Parse()
 	assert.NoError(t, err)
 	s, err := NewServer(c)
@@ -41,5 +41,28 @@ func TestSmokeTest(t *testing.T) {
 
 	_, err = s.DeleteTodo(reqCtx, updated)
 	assert.NoError(t, err)
+
+}
+
+func TestWithoutMetadata(t *testing.T) {
+	// Test that API endpoints return error
+	// once we have no userId
+	reqCtx := metadata.NewIncomingContext(context.TODO(), metadata.Pairs())
+	c, err := config.Parse()
+	assert.NoError(t, err)
+	s, err := NewServer(c)
+	assert.NoError(t, err)
+	todo := &todolist.Todo{
+		Title:  "A simple test todo item",
+		Status: "active",
+	}
+
+	_, err = s.CreateTodo(reqCtx, todo)
+	assert.Error(t, err)
+	_, err = s.ListTodos(reqCtx, &emptypb.Empty{})
+	assert.Error(t, err)
+	_, err = s.UpdateTodo(reqCtx, todo)
+	assert.Error(t, err)
+	_, err = s.DeleteTodo(reqCtx, todo)
 
 }
