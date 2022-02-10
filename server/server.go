@@ -56,7 +56,7 @@ func (s *Server) ListTodos(ctx context.Context, e *emptypb.Empty) (*todolist.Tod
 	}
 	userID := md.Get("user_id")
 	spew.Dump(userID)
-	todos, err := s.db.ListTodos()
+	todos, err := s.db.ListTodos(userID[0])
 	if err != nil {
 		return nil, err
 	}

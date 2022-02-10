@@ -10,12 +10,14 @@ import (
 	"github.com/supabase/postgrest-go"
 )
 
+//Supabase implements communication protocol with subabase.io/database
 type Supabase struct {
 	database.Database
 	conn   *postgrest.Client
 	config *config.AppConfig
 }
 
+// NewSupabaseDatabase creates Subabase database adapter by given configuration
 func NewSupabaseDatabase(c *config.AppConfig) (*Supabase, error) {
 	conn := postgrest.NewClient(c.SupabaseURL, "", map[string]string{
 		"apikey":        c.SupabaseKey,
@@ -31,26 +33,33 @@ func NewSupabaseDatabase(c *config.AppConfig) (*Supabase, error) {
 
 }
 
+// CreateTodo creates todo
 func (s *Supabase) CreateTodo(todo models.Todo) (models.Todo, error) {
 	var todos []models.Todo
 	q := s.conn.From("Todos").Insert(todo, false, "do-nothing", "", "")
 	_, err := q.ExecuteTo(&todos)
 	return todos[0], err
 }
-func (s *Supabase) ListTodos() ([]models.Todo, error) {
+
+// ListTodos returns todos for specifies user
+func (s *Supabase) ListTodos(userID string) ([]models.Todo, error) {
 	var todos []models.Todo
-	q := s.conn.From("Todos").Select("*", "10", false)
+	q := s.conn.From("Todos").Select("*", "10", false).Match(map[string]string{"owner_id": userID})
 	_, err := q.ExecuteTo(&todos)
 	return todos, err
 
 }
+
+// UpdateTodo updates todo
 func (s *Supabase) UpdateTodo(todo models.Todo) (models.Todo, error) {
 	var todos []models.Todo
-	q := s.conn.From("Todos").Update(todo, "", "")
+	q := s.conn.From("Todos").Update(todo, "", "").Match(map[string]string{"id": strconv.FormatInt(todo.ID, 10)})
 	_, err := q.ExecuteTo(&todos)
 	return todos[0], err
 
 }
+
+// DeleteTodo deletes Todo
 func (s *Supabase) DeleteTodo(todo models.Todo) error {
 	q := s.conn.From("Todos").Delete("", "").Match(map[string]string{"id": strconv.FormatInt(todo.ID, 10)})
 	_, _, err := q.Execute()

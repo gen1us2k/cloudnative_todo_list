@@ -16,9 +16,23 @@ func TestCreateTodo(t *testing.T) {
 	todo, err := s.CreateTodo(models.Todo{
 		Title:   "Test",
 		Status:  "active",
-		OwnerID: "uiod",
+		OwnerID: "uid",
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "Test", todo.Title)
 	assert.NotEqual(t, 0, todo.ID)
+
+	todo.Title = "Something else"
+
+	updated, err := s.UpdateTodo(todo)
+	assert.NoError(t, err)
+	assert.Equal(t, "Something else", updated.Title)
+
+	todos, err := s.ListTodos("uid")
+	assert.NoError(t, err)
+	assert.Equal(t, todos[0], updated)
+
+	err = s.DeleteTodo(updated)
+	assert.NoError(t, err)
+
 }
