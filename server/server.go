@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
 
 	"github.com/gen1us2k/cloudnative_todo_list/config"
@@ -43,8 +42,13 @@ func NewServer(c *config.AppConfig) (*Server, error) {
 
 // CreateTodo API
 func (s *Server) CreateTodo(ctx context.Context, todo *todolist.Todo) (*todolist.Todo, error) {
+	userID, err := s.getUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	todo.Owner = &todolist.User{Id: userID}
 	t := models.NewTodoFromPB(todo)
-	t, err := s.db.CreateTodo(t)
+	t, err = s.db.CreateTodo(t)
 	if err != nil {
 		return nil, err
 	}
@@ -54,13 +58,11 @@ func (s *Server) CreateTodo(ctx context.Context, todo *todolist.Todo) (*todolist
 
 // ListTodos returns todos created by authenticated user
 func (s *Server) ListTodos(ctx context.Context, e *emptypb.Empty) (*todolist.TodoListResponse, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, errors.New("")
+	userID, err := s.getUserID(ctx)
+	if err != nil {
+		return nil, err
 	}
-	userID := md.Get("user_id")
-	spew.Dump(userID)
-	todos, err := s.db.ListTodos(userID[0])
+	todos, err := s.db.ListTodos(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -73,8 +75,13 @@ func (s *Server) ListTodos(ctx context.Context, e *emptypb.Empty) (*todolist.Tod
 
 // UpdateTodo updatesTodo
 func (s *Server) UpdateTodo(ctx context.Context, todo *todolist.Todo) (*todolist.Todo, error) {
+	userID, err := s.getUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	todo.Owner = &todolist.User{Id: userID}
 	t := models.NewTodoFromPB(todo)
-	t, err := s.db.UpdateTodo(t)
+	t, err = s.db.UpdateTodo(t)
 	if err != nil {
 		return nil, err
 	}
@@ -148,4 +155,16 @@ func (s *Server) Start() {
 // Wait for it. Just wait
 func (s *Server) Wait() error {
 	return s.errGroup.Wait()
+}
+func (s *Server) getUserID(ctx context.Context) (string, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return "", errors.New("no session found in metadata")
+	}
+	data := md.Get("user_id")
+	if len(data) == 0 {
+		return "", errors.New("no user_id found in context metadata")
+
+	}
+	return data[0], nil
 }
