@@ -41,7 +41,6 @@ func TestSmokeTest(t *testing.T) {
 
 	_, err = s.DeleteTodo(reqCtx, updated)
 	assert.NoError(t, err)
-
 }
 
 func TestWithoutMetadata(t *testing.T) {
@@ -64,5 +63,5 @@ func TestWithoutMetadata(t *testing.T) {
 	_, err = s.UpdateTodo(reqCtx, todo)
 	assert.Error(t, err)
 	_, err = s.DeleteTodo(reqCtx, todo)
-
+	assert.Error(t, err)
 }

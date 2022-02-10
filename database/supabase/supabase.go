@@ -2,7 +2,6 @@ package supabase
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gen1us2k/cloudnative_todo_list/config"
@@ -11,7 +10,7 @@ import (
 	"github.com/supabase/postgrest-go"
 )
 
-//Supabase implements communication protocol with subabase.io/database
+// Supabase implements communication protocol with subabase.io/database
 type Supabase struct {
 	database.Database
 	conn   *postgrest.Client
@@ -31,7 +30,6 @@ func NewSupabaseDatabase(c *config.AppConfig) (*Supabase, error) {
 		config: c,
 		conn:   conn,
 	}, nil
-
 }
 
 // CreateTodo creates todo
@@ -48,23 +46,21 @@ func (s *Supabase) ListTodos(userID string) ([]models.Todo, error) {
 	q := s.conn.From("Todos").Select("*", "10", false).Match(map[string]string{"owner_id": userID})
 	_, err := q.ExecuteTo(&todos)
 	return todos, err
-
 }
 
 // UpdateTodo updates todo
 func (s *Supabase) UpdateTodo(todo models.Todo) (models.Todo, error) {
 	var todos []models.Todo
 	spew.Dump(todo)
-	q := s.conn.From("Todos").Update(todo, "", "").Match(map[string]string{"id": strconv.FormatInt(todo.ID, 10)})
+	q := s.conn.From("Todos").Update(todo, "", "").Match(map[string]string{"id": database.FormatInt64(todo.ID)})
 	_, err := q.ExecuteTo(&todos)
 	spew.Dump(err)
 	return todos[0], err
-
 }
 
 // DeleteTodo deletes Todo
 func (s *Supabase) DeleteTodo(todo models.Todo) error {
-	q := s.conn.From("Todos").Delete("", "").Match(map[string]string{"id": strconv.FormatInt(todo.ID, 10)})
+	q := s.conn.From("Todos").Delete("", "").Match(map[string]string{"id": database.FormatInt64(todo.ID)})
 	_, _, err := q.Execute()
 
 	return err

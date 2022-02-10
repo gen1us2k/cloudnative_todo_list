@@ -53,7 +53,6 @@ func (s *Server) CreateTodo(ctx context.Context, todo *todolist.Todo) (*todolist
 		return nil, err
 	}
 	return t.ToProto(), nil
-
 }
 
 // ListTodos returns todos created by authenticated user
@@ -88,7 +87,7 @@ func (s *Server) UpdateTodo(ctx context.Context, todo *todolist.Todo) (*todolist
 	return t.ToProto(), nil
 }
 
-//DeleteTodo deletes todo
+// DeleteTodo deletes todo
 func (s *Server) DeleteTodo(ctx context.Context, todo *todolist.Todo) (*todolist.DeleteResponse, error) {
 	userID, err := s.getUserID(ctx)
 	if err != nil {
@@ -169,7 +168,6 @@ func (s *Server) getUserID(ctx context.Context) (string, error) {
 	data := md.Get("user_id")
 	if len(data) == 0 {
 		return "", errors.New("no user_id found in context metadata")
-
 	}
 	return data[0], nil
 }

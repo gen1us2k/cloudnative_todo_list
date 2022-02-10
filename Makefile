@@ -14,3 +14,6 @@ build_grpc: ## Generate files for gRPC
 
 test:
 	go test ./...
+
+lint: ## Run lint against Go code
+	golangci-lint run ./...

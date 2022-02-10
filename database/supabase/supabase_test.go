@@ -34,5 +34,4 @@ func TestCreateTodo(t *testing.T) {
 
 	err = s.DeleteTodo(updated)
 	assert.NoError(t, err)
-
 }

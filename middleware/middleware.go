@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -124,7 +124,7 @@ func (k *KratosMiddleware) Middleware(next http.Handler) http.Handler {
 		if ctx == nil {
 			ctx = context.Background()
 		}
-		session, err := k.validateSession(ctx, r)
+		session, err := k.validateSession(r)
 		if err != nil {
 			http.Redirect(w, r, k.UIURL, http.StatusFound)
 			return
@@ -135,13 +135,16 @@ func (k *KratosMiddleware) Middleware(next http.Handler) http.Handler {
 	})
 }
 
-func (k *KratosMiddleware) validateSession(ctx context.Context, r *http.Request) (*KratosSession, error) {
+func (k *KratosMiddleware) validateSession(r *http.Request) (*KratosSession, error) {
 	var session KratosSession
 	cookie, err := r.Cookie(config.KratosSessionKey)
+	if err != nil {
+		return nil, err
+	}
 	if cookie == nil {
 		return nil, errors.New("no session in cookies")
 	}
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/sessions/whoami", k.APIURL), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/sessions/whoami", k.APIURL), http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +157,7 @@ func (k *KratosMiddleware) validateSession(ctx context.Context, r *http.Request)
 		return nil, errors.New("wrong status code")
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -162,5 +165,4 @@ func (k *KratosMiddleware) validateSession(ctx context.Context, r *http.Request)
 		return nil, err
 	}
 	return &session, nil
-
 }
