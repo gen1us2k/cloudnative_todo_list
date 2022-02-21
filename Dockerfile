@@ -5,7 +5,7 @@ RUN mkdir /build
 ADD . /build
 
 WORKDIR /build
-RUN GOOS=linux go build -o todolist ./cmd/main.go
+RUN GOOS=linux go build -o todolist ./cmd/todolist/main.go
 
 FROM alpine
 
