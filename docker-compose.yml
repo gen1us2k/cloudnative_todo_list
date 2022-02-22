@@ -4,11 +4,12 @@ services:
   api:
     build:
       context: .
+    command: ["/bin/sh",]
     ports:
       - "8080:8080"
       - "8081:8081"
-    env_file:
-      - .env
+        #env_file:
+        #- .env
     networks:
       - intranet
 
