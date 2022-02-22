@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/gorilla/mux"
 
 	"github.com/gen1us2k/cloudnative_todo_list/config"
@@ -37,6 +39,8 @@ func NewServer(c *config.AppConfig) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.SetFormatter(&log.JSONFormatter{})
+
 	return &Server{db: db, config: c, errGroup: new(errgroup.Group)}, nil
 }
 
@@ -44,12 +48,14 @@ func NewServer(c *config.AppConfig) (*Server, error) {
 func (s *Server) CreateTodo(ctx context.Context, todo *todolist.Todo) (*todolist.Todo, error) {
 	userID, err := s.getUserID(ctx)
 	if err != nil {
+		log.Errorf("failed getting userID from context: %v", err)
 		return nil, err
 	}
 	todo.Owner = &todolist.User{Id: userID}
 	t := models.NewTodoFromPB(todo)
 	t, err = s.db.CreateTodo(t)
 	if err != nil {
+		log.Errorf("failed creating todo: %v", err)
 		return nil, err
 	}
 	return t.ToProto(), nil
@@ -59,10 +65,12 @@ func (s *Server) CreateTodo(ctx context.Context, todo *todolist.Todo) (*todolist
 func (s *Server) ListTodos(ctx context.Context, e *emptypb.Empty) (*todolist.TodoListResponse, error) {
 	userID, err := s.getUserID(ctx)
 	if err != nil {
+		log.Errorf("failed getting userID from context: %v", err)
 		return nil, err
 	}
 	todos, err := s.db.ListTodos(userID)
 	if err != nil {
+		log.Errorf("failed getting todos: %v", err)
 		return nil, err
 	}
 	res := &todolist.TodoListResponse{}
@@ -76,12 +84,14 @@ func (s *Server) ListTodos(ctx context.Context, e *emptypb.Empty) (*todolist.Tod
 func (s *Server) UpdateTodo(ctx context.Context, todo *todolist.Todo) (*todolist.Todo, error) {
 	userID, err := s.getUserID(ctx)
 	if err != nil {
+		log.Errorf("failed getting userID from context: %v", err)
 		return nil, err
 	}
 	todo.Owner = &todolist.User{Id: userID}
 	t := models.NewTodoFromPB(todo)
 	t, err = s.db.UpdateTodo(t)
 	if err != nil {
+		log.Errorf("failed updating todo: %v", err)
 		return nil, err
 	}
 	return t.ToProto(), nil
@@ -91,10 +101,12 @@ func (s *Server) UpdateTodo(ctx context.Context, todo *todolist.Todo) (*todolist
 func (s *Server) DeleteTodo(ctx context.Context, todo *todolist.Todo) (*todolist.DeleteResponse, error) {
 	userID, err := s.getUserID(ctx)
 	if err != nil {
+		log.Errorf("failed getting userID from context: %v", err)
 		return nil, err
 	}
 	todo.Owner = &todolist.User{Id: userID}
 	if err := s.db.DeleteTodo(models.NewTodoFromPB(todo)); err != nil {
+		log.Errorf("failed deleting todo: %v", err)
 		return nil, err
 	}
 
@@ -124,10 +136,12 @@ func (s *Server) startHTTP() error {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
+		log.Errorf("failed creating dial context: %v", err)
 		return err
 	}
 	err = todolist.RegisterTodolistAPIServiceHandler(ctx, gwmux, conn)
 	if err != nil {
+		log.Errorf("failed to register service handler: %v", err)
 		return err
 	}
 	srv := &http.Server{
@@ -137,16 +151,19 @@ func (s *Server) startHTTP() error {
 		IdleTimeout:  time.Second * 60,
 		Handler:      r, // Pass our instance of gorilla/mux in.
 	}
+	log.Infof("REST API server is running on :%d", s.config.HTTPPort)
 	return srv.ListenAndServe()
 }
 func (s *Server) startGRPC() error {
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", s.config.GRPCPort))
 	if err != nil {
+		log.Errorf("failed to create listener: %v", err)
 		return err
 	}
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 	todolist.RegisterTodolistAPIServiceServer(grpcServer, s)
+	log.Infof("gRPC server is running on :%d", s.config.GRPCPort)
 	return grpcServer.Serve(lis)
 }
 

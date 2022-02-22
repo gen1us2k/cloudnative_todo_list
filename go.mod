@@ -26,6 +26,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/ory/kratos-client-go v0.8.2-alpha.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/sirupsen/logrus v1.8.1 // indirect
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sys v0.0.0-20210510120138-977fb7262007 // indirect

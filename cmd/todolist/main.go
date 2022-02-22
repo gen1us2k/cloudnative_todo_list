@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gen1us2k/cloudnative_todo_list/config"
 	"github.com/gen1us2k/cloudnative_todo_list/server"
