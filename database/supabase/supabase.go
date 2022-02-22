@@ -3,7 +3,6 @@ package supabase
 import (
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gen1us2k/cloudnative_todo_list/config"
 	"github.com/gen1us2k/cloudnative_todo_list/database"
 	"github.com/gen1us2k/cloudnative_todo_list/models"
@@ -51,10 +50,8 @@ func (s *Supabase) ListTodos(userID string) ([]models.Todo, error) {
 // UpdateTodo updates todo
 func (s *Supabase) UpdateTodo(todo models.Todo) (models.Todo, error) {
 	var todos []models.Todo
-	spew.Dump(todo)
 	q := s.conn.From("Todos").Update(todo, "", "").Match(map[string]string{"id": database.FormatInt64(todo.ID)})
 	_, err := q.ExecuteTo(&todos)
-	spew.Dump(err)
 	return todos[0], err
 }
 

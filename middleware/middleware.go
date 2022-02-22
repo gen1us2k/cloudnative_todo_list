@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gen1us2k/cloudnative_todo_list/config"
 	"github.com/gen1us2k/cloudnative_todo_list/grpc/v1/todolist"
 	"google.golang.org/grpc"
@@ -96,14 +95,12 @@ func UnaryServerInterceptor(authFunc AuthFunc) grpc.UnaryServerInterceptor {
 
 // GatewayResponseModifier modifies response
 func GatewayResponseModifier(ctx context.Context, response http.ResponseWriter, _ proto.Message) error {
-	spew.Dump("GatewayResponseMidifier")
 	return nil
 }
 
 // GatewayMetadataAnnotator looks up session and pass userId in to context if it exists
 func GatewayMetadataAnnotator(ctx context.Context, r *http.Request) metadata.MD {
 	// otherwise pass no extra metadata along
-	spew.Dump("GatewayMetadataAnnotator")
 	user, ok := ctx.Value(config.KratosTraitsKey).(*todolist.User)
 	if !ok {
 		return metadata.Pairs()
